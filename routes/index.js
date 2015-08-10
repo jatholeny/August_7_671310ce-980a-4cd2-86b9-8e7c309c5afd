@@ -17,3 +17,7 @@ router.post('/test2',function(req,res){
   console.log(req.files);
   res.status(200).json({message:'haha'})
 });
+
+router.get('/test3',function(req,res){
+  res.status(200).json({message:'haha'})
+});
