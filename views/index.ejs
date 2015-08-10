@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <style>
+      .fileDropTarget {
+        height:500px;
+        background-color: #00B7FF;
+        color:red;
+        font-size: large;
+      }
+    </style>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <button id="basictest">Test Ajax</button>
+    <div class="fileDropTarget" data-uploadto="/test2"></div>
+  </body>
+<script>
+//basic ajax review
+  document.getElementById("basictest").addEventListener('click',function(){
+
+       makeajax('/test1', function(data){
+         console.log(data);
+       });
+        console.log("b is ", makeajax('/test1', function(data){
+          console.log(data);
+        }));  //because this is async, b has not been set value yet
+
+
+  });
+function makeajax(url, callback) {
+  var a;
+  var xhr = new XMLHttpRequest;
+  xhr.open('get', url);
+  //xhr.setRequestHeader('content-type','application/josn');
+  xhr.addEventListener('readystatechange', function () {
+    if (xhr.readyState == 4 && xhr.status === 200) {
+      callback(xhr.responseText);
+      callback(xhr.getAllResponseHeaders());
+      callback(xhr.getResponseHeader('content-length'));
+      callback(xhr.getResponseHeader('Content-type'));
+      var b= xhr.responseText
+      return b
+
+    }
+  });
+  xhr.send();
+  console.log("a is", a);  //because this is async, a has not been set value yet
+}
+
+//encode review
+data ={
+  name:'info1',
+  id:'info2',
+  phone:'info3',
+  email:'info4'
+};
+
+function encodedata(data){
+  var arr = [];
+  for (var prop in data){
+    arr.push(encodeURIComponent(prop) + '=' + encodeURIComponent(data[prop]));
+  }
+  return arr.join('&');
+};
+console.log("now is the encoded data",encodedata(data));
+
+//ajax event review
+  document.addEventListener('DOMContentLoaded',function(){
+    var elts = document.getElementsByClassName("fileDropTarget");
+    for(var i=0;i<elts.length;i++){
+      var target = elts[i];
+      var url = target.getAttribute("data-uploadto");
+      console.log("url====",url );
+      if(!url) continue;
+      createFileUploadDropTarget(target,url);
+    };
+
+    function createFileUploadDropTarget(target,url) {
+      var uploading = false;
+      target.ondragenter = function (event) {
+        console.log("dragenter---------------------");
+        if (uploading) return;
+        var types = event.dataTransfer.types;
+        console.log(event.dataTransfer);
+        console.log(types);  //"Files"
+        if (types &&
+                ((types.contains && types.contains("Files")) ||
+                (types.indexOf && types.indexOf("Files") !== -1))) {
+          target.classList.add('wantdrop');
+          return false;
+        }
+      };
+
+      target.ondragover = function (event) {
+        if (!uploading) return false;
+        console.log("dragover-----------------------------");
+      };
+      target.ondragleave = function (event) {
+        if (!uploading) target.classList.remove("wantdrop");
+        console.log("dragleave----------------");
+      };
+
+      target.ondrop = function (event) {
+        console.log("right now!!! droped and uploading!!!")
+        if (uploading) return false;
+        var files = event.dataTransfer.files;
+        if (files && files.length) {
+          uploading = true;
+          var message = "Uploading files:<ul>";
+          for (var i = 0; i < files.length; i++) {
+            console.log(files[i]);
+            message += "<li>" + files[i].name + "</li>";
+          }
+          ;
+          message += "</ul>";
+
+          target.innerHTML = message;
+          target.classList.remove("wantdrop");
+          target.classList.add("uploading");
+
+          var xhr = new XMLHttpRequest;
+          xhr.open("POST", url);
+          var body = new FormData();
+          for (var i = 0; i < files.length; i++) body.append(i, files[i]);
+
+          // difference between progress and load event?
+          // progress check every 50mms , load triggered when complete
+          xhr.upload.onprogress = function (e) {
+            if (e.lengthComputable) {
+              target.innerHTML = message + Math.round(e.loaded / e.total * 100) + "%Complete";
+            }
+          };
+          xhr.upload.onload = function (event) {
+            uploading = false;
+            target.classList.remove("uploading");
+            target.innerHTML = "Drop files to upload";
+          };
+          xhr.send(body);
+
+          return false;
+        }
+        target.classList.remove("wantdrop");
+      }
+
+    };
+
+  })
+</script>
+</html>
